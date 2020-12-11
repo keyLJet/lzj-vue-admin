@@ -2,13 +2,13 @@
   <div>
     <el-button type="primary" icon="el-icon-plus">添加</el-button>
     <!-- 主体表格 -->
-    <el-table :data="tableData" border style="width: 100%; margin: 20px 0">
-      <el-table-column prop="id" label="序号" width="80" align="center">
+    <el-table :data="trademarkList" border style="width: 100%; margin: 20px 0">
+      <el-table-column type="index" label="序号" width="80" align="center">
       </el-table-column>
-      <el-table-column prop="name" label="品牌名称"> </el-table-column>
-      <el-table-column label="品牌LOGO" height='250'>
+      <el-table-column prop="tmName" label="品牌名称"> </el-table-column>
+      <el-table-column label="品牌LOGO" height="250">
         <template slot-scope="scope">
-          <img class="trademark-img" :src="scope.row.logo" alt="logo" />
+          <img class="trademark-img" :src="scope.row.logoUrl" alt="logo" />
         </template>
       </el-table-column>
       <el-table-column label="操作">
@@ -21,13 +21,15 @@
     <!-- 分页器 -->
     <el-pagination
       class="trademark-pagination"
-      :page-sizes="[10, 20, 40]"
-      :page-size="10"
+      @size-change="getPageList(page, $event)"
+      @current-change="getPageList($event, limit)"
+      :page-sizes="[3, 6, 9]"
+      :page-size.sync="limit"
       layout="prev, pager, next, jumper, sizes, total"
-      :total="100"
+      :total="total"
+      :current-page="page"
     >
     </el-pagination>
-
   </div>
 </template>
 
@@ -36,14 +38,29 @@ export default {
   name: "TrademarkList",
   data() {
     return {
-      tableData: [
-        {
-          id: 1,
-          name: "CLOT",
-          logo:'https://timgsa.baidu.com/timg?image&quality=80&size=b9999_10000&sec=1607669238473&di=e7bced0b0de7b093f976cc28653cc658&imgtype=0&src=http%3A%2F%2Fimgsrc.baidu.com%2Fforum%2Fw%3D580%2Fsign%3D8f7e7c00db43ad4ba62e46c8b2035a89%2F5a3b3d12b31bb051ae54328d3c7adab44bede0f4.jpg',
-        },
-      ],
+      trademarkList: [],
+      total: 0,
+      page: 1,
+      limit: 3,
     };
+  },
+  methods: {
+    //获取品牌列表
+    async getPageList(page, limit) {
+      const result = await this.$API.trademark.getPageList(page, limit);
+      if (result.code === 200) {
+        this.$message.success("获取品牌分页列表成功");
+        this.limit = result.data.size; // 代表每页显示的条数
+        this.page = result.data.current; // 代表当前页码
+        this.trademarkList = result.data.records;
+        this.total = result.data.total; // 总数
+      } else {
+        this.$message.error("获取品牌分页列表失败");
+      }
+    },
+  },
+  mounted() {
+    this.getPageList(this.page, this.limit);
   },
 };
 </script>
