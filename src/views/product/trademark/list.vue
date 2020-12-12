@@ -4,7 +4,7 @@
       >添加</el-button
     >
     <!-- 主体表格 -->
-    <el-table :data="trademarkList" v-load='loading' border style="width: 100%; margin: 20px 0">
+    <el-table :data="trademarkList" v-loading='loading' border style="width: 100%; margin: 20px 0">
       <el-table-column type="index" label="序号" width="80" align="center">
       </el-table-column>
       <el-table-column prop="tmName" label="品牌名称"> </el-table-column>
@@ -210,10 +210,11 @@ export default {
           const result = await this.$API.trademark.deleteTrademark(row.id);
           // 如果成功了, 提示成功
           this.$message.success('删除品牌成功！')
-          // 重新获取列表时应该显示哪一页? 显示上一页(当前页的列表数据只剩下1个)  否则显示当前页
-          // 如果当前是第1页且只剩下1条数据 ==> 请求第1页数据(当前页)
+          // 重新获取列表时应该显示哪一页：
+          // 如果当前页面品牌列表数据只剩下一条并且不是第一页的时候，应该显示上一页。否则显示当前页面
+          console.log(this.trademarkList)
           this.getPageList(
-            this.trademarkList.length === 1 && this.page > 1
+            this.trademarkList.length <= 1 && this.page > 1
               ? this.page - 1
               : this.page,
             this.limit
