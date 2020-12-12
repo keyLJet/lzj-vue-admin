@@ -14,8 +14,10 @@
         </template>
       </el-table-column>
       <el-table-column label="操作">
-        <template>
-          <el-button type="warning" icon="el-icon-edit">修改</el-button>
+        <template v-slot="{ row }">
+          <el-button type="warning" icon="el-icon-edit" @click="update(row)"
+            >修改</el-button
+          >
           <el-button type="danger" icon="el-icon-delete">删除</el-button>
         </template>
       </el-table-column>
@@ -33,7 +35,11 @@
     >
     </el-pagination>
     <!-- 对话框element-ui -->
-    <el-dialog title="添加品牌" :visible.sync="visible" width="50%">
+    <el-dialog
+      :title="`${trademarkForm.id ? '修改' : '添加'}品牌`"
+      :visible.sync="visible"
+      width="50%"
+    >
       <el-form
         :model="trademarkForm"
         :rules="rules"
@@ -135,24 +141,49 @@ export default {
       this.trademarkForm.logoUrl = res.data;
     },
     //提交表单
-    submitForm(form){
+    submitForm(form) {
       // console.log(form)
       //校验表单通过才发送请求给服务器添加品牌
-      this.$refs[form].validate(async (valid) =>{
-        if(valid) {
-          console.log(this.trademarkForm);
-          const result = await this.$API.trademark.addTrademark(this.trademarkForm)
-          if(result.code === 200){
-            this.$message.success('添加品牌数据成功！')
+      this.$refs[form].validate(async (valid) => {
+        if (valid) {
+          // console.log(this.trademarkForm);
+          const { trademarkForm } = this;
+          const isUpdate = !!trademarkForm.id;
+          if (isUpdate) {
+            const tm = this.trademarkList.find(
+              (tm) => tm.id === trademarkForm.id
+            );
+            if (
+              tm.tmName === trademarkForm.tmName &&
+              tm.logoUrl === trademarkForm.logoUrl
+            ) {
+              this.$message.warning("所提交数据并没有任何改变");
+              return;
+            }
+          }
+          let result;
+          if (isUpdate) {
+            result = await this.$API.trademark.updateTrademark(trademarkForm);
+          } else {
+            result = await this.$API.trademark.addTrademark(trademarkForm);
+          }
+
+          if (result.code === 200) {
+            this.$message.success(`${isUpdate ? "修改" : "添加"}品牌数据成功~`);
             //隐藏对话框
-            this.visible = false
+            this.visible = false;
             //重新请求品牌列表数据
-            this.getPageList(this.page,this.limit)
-          }else{
-            this.$message.error(result.message)
+            this.getPageList(this.page, this.limit);
+          } else {
+            this.$message.error(result.message);
           }
         }
-      })
+      });
+    },
+    //点击修改品牌时触发
+    update(row) {
+      this.visible = true;
+      this.trademarkForm = { ...row };
     },
   },
   mounted() {
