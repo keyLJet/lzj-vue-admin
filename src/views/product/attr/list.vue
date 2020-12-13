@@ -1,20 +1,19 @@
 <template>
   <div>
     <!-- 属性分类选择区域 -->
-    <Category @change='getAttrList' />
+    <Category @change="getAttrList" :disabled="!isShowList" />
 
     <!-- 平台属性列表及操作区域 -->
-    <el-card style="margin-top: 20px">
-      <!-- 添加属性 -->
+    <el-card v-show="isShowList" style="margin-top: 20px">
       <el-button type="primary" icon="el-icon-plus">添加属性</el-button>
-      <!-- 属性列表 -->
+
       <el-table :data="attrList" border style="width: 100%; margin: 20px 0">
         <el-table-column type="index" label="序号" width="80" align="center">
         </el-table-column>
         <el-table-column prop="attrName" label="属性名称" width="150">
         </el-table-column>
 
-         <el-table-column label="属性值列表">
+        <el-table-column label="属性值列表">
           <template v-slot="{ row }">
             <el-tag
               style="margin-right: 5px"
@@ -24,13 +23,13 @@
             >
           </template>
         </el-table-column>
-
         <el-table-column label="操作" width="150">
-          <template>
+          <template v-slot="{ row }">
             <el-button
               type="warning"
               icon="el-icon-edit"
               size="mini"
+              @click="update(row)"
             ></el-button>
             <el-button
               type="danger"
@@ -39,8 +38,64 @@
             ></el-button>
           </template>
         </el-table-column>
-        
       </el-table>
+    </el-card>
+
+    <el-card v-show="!isShowList" style="margin-top: 20px">
+      <el-form :model="attr" inline>
+        <el-form-item label="属性名" prop="attrName">
+          <el-input v-model="attr.attrName"></el-input>
+        </el-form-item>
+      </el-form>
+
+      <el-button type="primary" icon="el-icon-plus" @click="addAttrValue"
+        >添加属性值</el-button
+      >
+
+      <el-table
+        :data="attr.attrValueList"
+        border
+        style="width: 100%; margin: 20px 0"
+      >
+        <el-table-column type="index" label="序号" width="80" align="center">
+        </el-table-column>
+        <el-table-column label="属性值名称">
+          <template v-slot="{ row, $index }">
+            <el-input
+              v-if="row.edit"
+              v-model="row.valueName"
+              @blur="editCompleted(row, $index)"
+              @keyup.enter.native="editCompleted(row, $index)"
+              autofocus
+              ref="input"
+              size="mini"
+            ></el-input>
+            <span
+              v-else
+              @click="edit(row)"
+              style="display: block; width: 100%"
+              >{{ row.valueName }}</span
+            >
+          </template>
+        </el-table-column>
+        <el-table-column label="操作">
+          <template v-slot="{ row, $index }">
+            <el-popconfirm
+              @onConfirm="delAttrValue($index)"
+              :title="`确定删除 ${row.valueName} 吗？`"
+              ><el-button
+                type="danger"
+                icon="el-icon-delete"
+                size="mini"
+                slot="reference"
+              ></el-button
+            ></el-popconfirm>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <el-button type="primary" @click="save">保存</el-button>
+      <el-button @click="isShowList = true">取消</el-button>
     </el-card>
   </div>
 </template>
@@ -52,17 +107,60 @@ export default {
   name: "AttrList",
   data() {
     return {
-      category: {
-        category1Id: "",
-        category2Id: "",
-        category3Id: "",
-      },
       attrList: [],
+      attr: {
+        attrName: "",
+        attrValueList: [],
+      },
+      isShowList: true,
     };
   },
-  methods:{
-    getAttrList(attrList) {
-      this.attrList = attrList;
+  methods: {
+    async getAttrList(category) {
+      this.category = category;
+      const result = await this.$API.attrs.getAttrList(category);
+      if (result.code === 200) {
+        this.attrList = result.data;
+      } else {
+        this.$message.error(result.message);
+      }
+    },
+    update(attr) {
+      this.attr = JSON.parse(JSON.stringify(attr));
+      this.isShowList = false;
+    },
+    addAttrValue() {
+      this.attr.attrValueList.push({ edit: true });
+      this.$nextTick(() => {
+        this.$refs.input.focus();
+      });
+    },
+    editCompleted(row, index) {
+      if (!row.valueName) {
+        this.attr.attrValueList.splice(index, 1);
+        return;
+      }
+      row.edit = false;
+    },
+    edit(row) {
+      this.$set(row, "edit", true);
+      this.$nextTick(() => {
+        this.$refs.input.focus();
+      });
+    },
+    delAttrValue(index) {
+      console.log(index);
+      this.attr.attrValueList.splice(index, 1);
+    },
+    async save() {
+      const result = await this.$API.attrs.saveAttrInfo(this.attr);
+      if (result.code === 200) {
+        this.$message.success("更新属性成功~");
+        this.isShowList = true;
+        this.getAttrList(this.category);
+      } else {
+        this.$message.error(result.message);
+      }
     },
   },
   components: {
