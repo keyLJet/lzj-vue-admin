@@ -101,7 +101,7 @@
 </template>
 
 <script>
-import Category from "./category";
+import Category from "@/components/Category";
 
 export default {
   name: "AttrList",
@@ -178,6 +178,7 @@ export default {
       this.isShowList = false
       this.attr.attrName = ''
       this.attr.attrValueList = []
+      this.attr.id = ''
     },
     clearList(){
       this.attrList = []
