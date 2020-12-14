@@ -1,8 +1,8 @@
 <template>
 <div>
   <Category />
-  <SpuShowList v-show="isShowList" />
-  <SpuUpdateList v-show="!isShowList" />
+  <SpuShowList v-show="isShowList" @showUpdateList='showUpdateList' />
+  <SpuUpdateList v-show="!isShowList" :item='item' />
 
 </div>
 </template>
@@ -16,8 +16,16 @@ export default {
   name: 'SpuList',
   data() {
     return {
-      isShowList:false,
+      isShowList:true,
+      item:{},
     }
+  },
+  methods:{
+    // SpuShowList中点击编辑按钮时触发，传递参数row
+    showUpdateList(row){
+      this.isShowList = false
+      this.item = {...row}
+    },
   },
   components: {
     Category,

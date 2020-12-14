@@ -80,7 +80,7 @@ export default {
       } else {
         this.$message.error(result.message);
       }
-      this.$emit('clearList')
+      this.$bus.$emit('clearList')
     },
     async handleSelectChange2(category2Id) {
       this.category.category3Id = "";
@@ -92,7 +92,7 @@ export default {
       } else {
         this.$message.error(result.message);
       }
-      this.$emit('clearList')
+      this.$bus.$emit('clearList')
     },
     async handleSelectChange3(category3Id) {
       const category = {
@@ -100,7 +100,7 @@ export default {
         category3Id,
       };
 
-      this.$emit("change", category);
+      this.$bus.$emit("change", category);
     },
   },
   async mounted() {
