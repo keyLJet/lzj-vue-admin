@@ -80,6 +80,7 @@ export default {
       } else {
         this.$message.error(result.message);
       }
+      this.$emit('clearList')
     },
     async handleSelectChange2(category2Id) {
       this.category.category3Id = "";
@@ -91,6 +92,7 @@ export default {
       } else {
         this.$message.error(result.message);
       }
+      this.$emit('clearList')
     },
     async handleSelectChange3(category3Id) {
       const category = {

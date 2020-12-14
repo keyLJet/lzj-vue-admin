@@ -1,11 +1,11 @@
 <template>
   <div>
     <!-- 属性分类选择区域 -->
-    <Category @change="getAttrList" :disabled="!isShowList" />
+    <Category @change="getAttrList" :disabled="!isShowList" @clearList='clearList' />
 
     <!-- 平台属性列表及操作区域 -->
     <el-card v-show="isShowList" style="margin-top: 20px">
-      <el-button type="primary" icon="el-icon-plus">添加属性</el-button>
+      <el-button type="primary" icon="el-icon-plus" :disabled='!category.category3Id' @click="add" >添加属性</el-button>
 
       <el-table :data="attrList" border style="width: 100%; margin: 20px 0">
         <el-table-column type="index" label="序号" width="80" align="center">
@@ -113,10 +113,16 @@ export default {
         attrValueList: [],
       },
       isShowList: true,
+      category:{
+        category1Id:'',
+        category2Id:'',
+        category3Id:'',
+      },
     };
   },
   methods: {
     async getAttrList(category) {
+
       this.category = category;
       const result = await this.$API.attrs.getAttrList(category);
       if (result.code === 200) {
@@ -153,7 +159,13 @@ export default {
       this.attr.attrValueList.splice(index, 1);
     },
     async save() {
-      const result = await this.$API.attrs.saveAttrInfo(this.attr);
+      const isAdd = !this.attr.id
+      const data = this.attr
+      if(isAdd){
+        data.categoryId = this.category.category3Id
+        data.categoryLevel = 3
+      }
+      const result = await this.$API.attrs.saveAttrInfo(data);
       if (result.code === 200) {
         this.$message.success("更新属性成功~");
         this.isShowList = true;
@@ -161,6 +173,15 @@ export default {
       } else {
         this.$message.error(result.message);
       }
+    },
+    add(){
+      this.isShowList = false
+      this.attr.attrName = ''
+      this.attr.attrValueList = []
+    },
+    clearList(){
+      this.attrList = []
+      this.category.category3Id = ''
     },
   },
   components: {
