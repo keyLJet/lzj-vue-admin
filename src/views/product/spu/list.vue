@@ -1,8 +1,8 @@
 <template>
 <div>
   <Category />
-  <SpuShowList v-show="isShowList" @showUpdateList='showUpdateList' />
-  <SpuUpdateList v-show="!isShowList" :item='item' />
+  <SpuShowList v-if="isShowList" @showUpdateList='showUpdateList' />
+  <SpuUpdateList v-else :item='item' />
 
 </div>
 </template>

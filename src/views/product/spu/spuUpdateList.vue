@@ -135,6 +135,7 @@ export default {
     //获取当前spu所有图片数据
     async getSpuImageList() {
       const { id } = this.spu;
+      console.log(id)
       const result = await this.$API.spu.getSpuImageList(id);
       console.log(result.data);
       if (result.code === 200) {
@@ -164,6 +165,8 @@ export default {
     async getSpuSaleAttrList() {
       const { id } = this.spu;
       const result = await this.$API.spu.getSpuSaleAttrList(id);
+      console.log(result.data);
+
       if (result.code === 200) {
         this.$message.success("获取当前SPU销售属性列表成功~");
         // 处理数据
