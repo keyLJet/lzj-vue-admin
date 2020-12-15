@@ -37,19 +37,25 @@
         </el-upload>
         <span>只能上传jpg/png文件，且不超过50kb</span>
       </el-form-item>
-      <el-form-item label="销售属性" prop="saleAttrId">
+      <el-form-item label="销售属性" prop="sale">
         <el-select
           :placeholder="`还剩${filterSaleAttrList.length}个未选择`"
-          v-model="spu.saleAttrId"
+          v-model="spu.sale"
         >
           <el-option
             v-for="sale in filterSaleAttrList"
             :label="sale.name"
-            :value="sale.id"
+            :value="`${sale.id}-${sale.name}`"
             :key="sale.id"
           ></el-option>
         </el-select>
-        <el-button type="primary" icon="el-icon-plus">添加销售属性</el-button>
+        <el-button
+          type="primary"
+          icon="el-icon-plus"
+          :disabled="!spu.sale"
+          @click="addSpuSaleAttr"
+          >添加销售属性</el-button
+        >
         <el-table
           :data="spuSaleAttrList"
           border
@@ -63,20 +69,34 @@
           <el-table-column label="属性值列表">
             <template v-slot="{ row }">
               <el-tag
+                @close="() => {}"
+                closable
                 style="margin-right: 5px"
                 v-for="attrVal in row.spuSaleAttrValueList"
                 :key="attrVal.id"
                 >{{ attrVal.saleAttrValueName }}</el-tag
               >
+              <el-input
+                v-if="row.edit"
+                size="mini"
+                style="width: 100px"
+                @blur="editCompleted(row)"
+                @keyup.enter.native="editCompleted(row)"
+                autofocus
+                ref="input"
+                v-model="saleAttrValueText"
+              ></el-input>
+              <el-button
+                v-else
+                icon="el-icon-plus"
+                size="mini"
+                @click="edit(row)"
+                >添加</el-button
+              >
             </template>
           </el-table-column>
           <el-table-column label="操作" width="150">
             <template>
-              <el-button
-                type="warning"
-                icon="el-icon-edit"
-                size="mini"
-              ></el-button>
               <el-button
                 type="danger"
                 icon="el-icon-delete"
@@ -113,6 +133,7 @@ export default {
       visible: false, // 图片对话框显示&隐藏
       saleAttrList: [], // 所有销售属性列表
       spuSaleAttrList: [], // 当前SPU销售属性列表
+      saleAttrValueText: "",
     };
   },
   computed: {
@@ -125,10 +146,10 @@ export default {
     },
     //处理图片数据字段名，为了在element-ui中使用数据
     formatImageList() {
-      return this.imageList.map((item) => {
+      return this.imageList.map((img) => {
         return {
-          name: item.imgName,
-          url: item.imgUrl,
+          name: img.imgName,
+          url: img.imgUrl,
           uid: img.uid || img.id,
         };
       });
@@ -219,6 +240,39 @@ export default {
         spuId: this.spu.id,
         uid: file.id,
       });
+    },
+    //添加spu销售属性
+    addSpuSaleAttr() {
+      const { sale, id } = this.spu;
+      const [baseSaleAttrId, saleAttrName] = sale.split("-");
+      this.spuSaleAttrList.push({
+        baseSaleAttrId: +baseSaleAttrId,
+        saleAttrName,
+        spuSaleAttrValueList: [],
+        spuId: id,
+      });
+      this.spu.sale = "";
+    },
+    edit(row) {
+      this.$set(row, "edit", true);
+      this.$nextTick(() => {
+        this.$refs.input.focus();
+      });
+    },
+    //添加销售属性值
+    editCompleted(row) {
+      if (this.saleAttrValueText) {
+        row.spuSaleAttrValueList.push({
+          baseSaleAttrId: row.baseSaleAttrId,
+          saleAttrName: row.saleAttrName,
+          saleAttrValueName: this.saleAttrValueText,
+          spuId: row.spuId,
+        });
+        //清空输入框内容
+        this.saleAttrValueText = "";
+      }
+
+      row.edit = false;
     },
   },
   mounted() {
