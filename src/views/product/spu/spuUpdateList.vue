@@ -1,6 +1,6 @@
 <template>
   <el-card style="margin-top: 20px">
-    <el-form label-width="80px" :model="spu">
+    <el-form label-width="80px" :model="spu" :rules="rules" ref="spuForm">
       <el-form-item label="SPU名称" prop="spuName">
         <el-input placeholder="请输入SPU名称" v-model="spu.spuName"></el-input>
       </el-form-item>
@@ -21,7 +21,7 @@
           v-model="spu.description"
         ></el-input>
       </el-form-item>
-      <el-form-item label="SPU图片">
+      <el-form-item label="SPU图片" prop="imageList">
         <el-upload
           class="avatar-uploader"
           list-type="picture-card"
@@ -69,10 +69,10 @@
           <el-table-column label="属性值列表">
             <template v-slot="{ row }">
               <el-tag
-                @close="() => {}"
+                @close="delTag(ind, row)"
                 closable
                 style="margin-right: 5px"
-                v-for="attrVal in row.spuSaleAttrValueList"
+                v-for="(attrVal,ind) in row.spuSaleAttrValueList"
                 :key="attrVal.id"
                 >{{ attrVal.saleAttrValueName }}</el-tag
               >
@@ -96,19 +96,24 @@
             </template>
           </el-table-column>
           <el-table-column label="操作" width="150">
-            <template>
-              <el-button
-                type="danger"
-                icon="el-icon-delete"
-                size="mini"
-              ></el-button>
+            <template v-slot="{ row, $index }">
+              <el-popconfirm
+                @onConfirm="delSpuSaleAttr($index)"
+                :title="`确定删除 ${row.saleAttrName} 吗？`"
+                ><el-button
+                  type="danger"
+                  icon="el-icon-delete"
+                  size="mini"
+                  slot="reference"
+                ></el-button
+              ></el-popconfirm>
             </template>
           </el-table-column>
         </el-table>
       </el-form-item>
       <el-form-item>
-        <el-button type="primary">保存</el-button>
-        <el-button>取消</el-button>
+        <el-button type="primary" @click="save">保存</el-button>
+        <el-button @click="$emit('showList',spu.category3Id)">取消</el-button>
       </el-form-item>
     </el-form>
 
@@ -134,6 +139,14 @@ export default {
       saleAttrList: [], // 所有销售属性列表
       spuSaleAttrList: [], // 当前SPU销售属性列表
       saleAttrValueText: "",
+      //校验规则
+      rules: {
+        spuName: [{ required: true, message: "请输入spu名称" }],
+        tmId: [{ required: true, message: "请选择品牌" }],
+        description: [{ required: true, message: "请输入SPU描述" }],
+        imageList: [{ validator: this.imageListValidator, required: true }],
+        sale: [{ validator: this.saleValidator, required: true }],
+      },
     };
   },
   computed: {
@@ -169,9 +182,9 @@ export default {
     //获取当前spu所有图片数据
     async getSpuImageList() {
       const { id } = this.spu;
-      console.log(id);
+      // console.log(id);
       const result = await this.$API.spu.getSpuImageList(id);
-      console.log(result.data);
+      // console.log(result.data);
       if (result.code === 200) {
         this.$message.success("获取当前SPU所有图片成功");
         this.imageList = result.data;
@@ -205,7 +218,7 @@ export default {
     handleRemove(file, fileList) {
       //参数打印查看
       // console.log(file,fileList)
-      this.imageList.filter((img) => img.imgUrl !== file.url);
+      this.imageList = this.imageList.filter((img) => img.imgUrl !== file.url);
     },
     //处理图片预览的事件回调
     handlePictureCardPreview(file) {
@@ -238,7 +251,7 @@ export default {
         imgName: file.name,
         imgUrl: res.data,
         spuId: this.spu.id,
-        uid: file.id,
+        uid: file.uid,
       });
     },
     //添加spu销售属性
@@ -273,6 +286,68 @@ export default {
       }
 
       row.edit = false;
+    },
+    //点击x按钮删除单个销售属性
+    delTag(index, row) {
+      console.log(index, row);
+      row.spuSaleAttrValueList.splice(index,1)
+    },
+    //点击垃圾桶图标删除整个属性
+    delSpuSaleAttr(index) {
+      this.spuSaleAttrList.splice(index, 1);
+    },
+    //自定义图片列表校验规则
+    imageListValidator(rule, value, callback) {
+      if (this.imageList.length > 0) {
+        // 校验通过
+        callback();
+        return;
+      }
+      // 校验失败
+      callback(new Error("请至少上传一张图片"));
+    },
+    //自定义销售属性校验规则
+    saleValidator(rule, value, callback) {
+      // 判断至少选择一个销售属性
+      if (this.spuSaleAttrList.length === 0) {
+        callback(new Error("请至少选择一个销售属性~"));
+        return;
+      }
+      // 判断销售属性中至少添加一个销售属性值
+      const isNotOk = this.spuSaleAttrList.some(
+        (sale) => sale.spuSaleAttrValueList.length === 0
+      );
+
+      if (isNotOk) {
+        callback(new Error("该销售属性应至少添加一个销售属性值, 请添加"));
+        return;
+      }
+      callback();
+    },
+    //点击保存，发送请求更新spu信息
+    save() {
+      //先进行校验
+      this.$refs.spuForm.validate(async(valid) => {
+        if (valid) {
+          console.log("校验通过");
+          //收集发送请求所需数据
+          const spu = {
+            ...this.spu,
+            spuImageList:this.imageList,
+            spuSaleAttrList:this.spuSaleAttrList
+          }
+          //发送请求
+          const result = await this.$API.spu.updateSpu(spu)
+          if(result.code === 200){
+            //触发自定义事件showList，切回spuShowList页面
+            this.$emit('showList',this.spu.category3Id)
+
+            this.$message.success('更新spu信息成功')
+          }else{
+            this.$message.error(result.message)
+          }
+        }
+      });
     },
   },
   mounted() {
