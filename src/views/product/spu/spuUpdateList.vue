@@ -25,10 +25,13 @@
         <el-upload
           class="avatar-uploader"
           list-type="picture-card"
-          :file-list="imageList"
+          :file-list="formatImageList"
           :action="`${$BASE_API}/admin/product/fileUpload`"
           :on-preview="handlePictureCardPreview"
           :on-remove="handleRemove"
+          :on-success="handleAvatarSuccess"
+          :before-upload="beforeAvatarUpload"
+          accept="image/*"
         >
           <i class="el-icon-plus avatar-uploader-icon"></i>
         </el-upload>
@@ -120,6 +123,16 @@ export default {
         );
       });
     },
+    //处理图片数据字段名，为了在element-ui中使用数据
+    formatImageList() {
+      return this.imageList.map((item) => {
+        return {
+          name: item.imgName,
+          url: item.imgUrl,
+          uid: img.uid || img.id,
+        };
+      });
+    },
   },
   methods: {
     // 获取所有品牌数据
@@ -135,18 +148,12 @@ export default {
     //获取当前spu所有图片数据
     async getSpuImageList() {
       const { id } = this.spu;
-      console.log(id)
+      console.log(id);
       const result = await this.$API.spu.getSpuImageList(id);
       console.log(result.data);
       if (result.code === 200) {
         this.$message.success("获取当前SPU所有图片成功");
-        this.imageList = result.data.map((item) => {
-          return {
-            id: item.id,
-            name: item.imgName,
-            url: item.imgUrl,
-          };
-        });
+        this.imageList = result.data;
       } else {
         this.$message.error(result.message);
       }
@@ -165,8 +172,6 @@ export default {
     async getSpuSaleAttrList() {
       const { id } = this.spu;
       const result = await this.$API.spu.getSpuSaleAttrList(id);
-      console.log(result.data);
-
       if (result.code === 200) {
         this.$message.success("获取当前SPU销售属性列表成功~");
         // 处理数据
@@ -179,7 +184,7 @@ export default {
     handleRemove(file, fileList) {
       //参数打印查看
       // console.log(file,fileList)
-      this.imageList.filter((img) => img.id !== file.id);
+      this.imageList.filter((img) => img.imgUrl !== file.url);
     },
     //处理图片预览的事件回调
     handlePictureCardPreview(file) {
@@ -187,6 +192,33 @@ export default {
       // console.log(file)
       this.previewImgUrl = file.url;
       this.visible = true;
+    },
+    // 上次图片之前触发的回调
+    beforeAvatarUpload(file) {
+      // console.log(file);
+      const imgTypes = ["image/jpg", "image/png", "image/jpeg"];
+      // 检测文件类型
+      const isValidType = imgTypes.indexOf(file.type) > -1;
+      // 检测文件大小
+      const isLt = file.size / 1024 < 50;
+
+      if (!isValidType) {
+        this.$message.error("上传品牌LOGO只能是 JPG 或 PNG 格式!");
+      }
+      if (!isLt) {
+        this.$message.error("上传品牌LOGO大小不能超过 50 kb!");
+      }
+      // 返回值为true，代表可以上传
+      return isValidType && isLt;
+    },
+    //上传图片成功的回调
+    handleAvatarSuccess(res, file) {
+      this.imageList.push({
+        imgName: file.name,
+        imgUrl: res.data,
+        spuId: this.spu.id,
+        uid: file.id,
+      });
     },
   },
   mounted() {
