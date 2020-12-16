@@ -337,12 +337,17 @@ export default {
             spuSaleAttrList:this.spuSaleAttrList
           }
           //发送请求
-          const result = await this.$API.spu.updateSpu(spu)
+          let result
+          if(this.spu.id){
+            result = await this.$API.spu.updateSpu(spu)
+          }else{
+            result = await this.$API.spu.saveSpu(spu)
+          }
           if(result.code === 200){
             //触发自定义事件showList，切回spuShowList页面
             this.$emit('showList',this.spu.category3Id)
 
-            this.$message.success('更新spu信息成功')
+            this.$message.success(`${this.spu.id ? '更新' : '添加'}spu信息成功`)
           }else{
             this.$message.error(result.message)
           }
@@ -352,9 +357,11 @@ export default {
   },
   mounted() {
     this.getTrademarkList();
-    this.getSpuImageList();
     this.getSaleAttrList();
+    if(this.spu.id){
+    this.getSpuImageList();
     this.getSpuSaleAttrList();
+    }
   },
 };
 </script>
