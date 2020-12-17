@@ -30,7 +30,7 @@
             type="primary"
             icon="el-icon-edit"
             size="mini"
-            @click="$emit('showUpdateList', row)"
+            @click="$emit('showUpdateList', { ...row, ...category })"
           ></el-button>
           <el-button type="info" icon="el-icon-info" size="mini"></el-button>
           <el-button
@@ -56,29 +56,54 @@
 </template>
 
 <script>
+import { mapState } from "vuex";
+
 export default {
   name: "SpuShowList",
   data() {
     return {
       spuList: [],
-      category: {
-        category1Id: "",
-        category2Id: "",
-        category3Id: "",
-      },
+      // category: {
+      //   category1Id: "",
+      //   category2Id: "",
+      //   category3Id: "",
+      // },
       page: 1,
       limit: 3,
       total: 0,
       loading: false,
     };
   },
-  methods: {
-    // 三级分类组件中触发change事件选中具体分类时的事件回调
-    handleCategoryChange(category) {
-      //Category组件中触发事件携带的参数将分类id传递过来
-      this.category = category;
-      this.getPageList(this.page, this.limit);
+  computed: {
+    ...mapState({
+      category: (state) => state.category.category,
+    }),
+  },
+    watch: {
+      //监视category3Id值变化时，发送请求获取spu分页列表
+    "category.category3Id": {
+      handler(category3Id) {
+        if (!category3Id) return;
+        this.getPageList(this.page, this.limit);
+      },
+      immediate: true, // 一上来触发一次
     },
+    //监视category1Id值变化时，清空spu分页列表，初始化分页器相关数据
+    "category.category1Id"() {
+      this.clearList();
+    },
+    //监视category2Id值变化时，清空spu分页列表，初始化分页器相关数据
+    "category.category2Id"() {
+      this.clearList();
+    },
+  },
+  methods: {
+    // // 三级分类组件中触发change事件选中具体分类时的事件回调
+    // handleCategoryChange(category) {
+    //   //Category组件中触发事件携带的参数将分类id传递过来
+    //   this.category = category;
+    //   this.getPageList(this.page, this.limit);
+    // },
     //获取spu分页列表
     async getPageList(page, limit) {
       this.loading = true;
@@ -107,14 +132,14 @@ export default {
       this.category.category3Id = "";
     },
   },
-  mounted() {
-    this.$bus.$on("change", this.handleCategoryChange);
-    this.$bus.$on("clearList", this.clearList);
-  },
-  beforeDestroy() {
-    this.$bus.$off("change", this.handleCategoryChange);
-    this.$bus.$off("clearList", this.clearList);
-  },
+  // mounted() {
+  //   this.$bus.$on("change", this.handleCategoryChange);
+  //   this.$bus.$on("clearList", this.clearList);
+  // },
+  // beforeDestroy() {
+  //   this.$bus.$off("change", this.handleCategoryChange);
+  //   this.$bus.$off("clearList", this.clearList);
+  // },
 };
 </script>
 

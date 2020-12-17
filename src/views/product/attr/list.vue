@@ -1,11 +1,17 @@
 <template>
   <div>
     <!-- 属性分类选择区域 -->
-    <Category @change="getAttrList" :disabled="!isShowList" @clearList='clearList' />
+    <Category :disabled="!isShowList" />
 
     <!-- 平台属性列表及操作区域 -->
     <el-card v-show="isShowList" style="margin-top: 20px">
-      <el-button type="primary" icon="el-icon-plus" :disabled='!category.category3Id' @click="add" >添加属性</el-button>
+      <el-button
+        type="primary"
+        icon="el-icon-plus"
+        :disabled="!category.category3Id"
+        @click="add"
+        >添加属性</el-button
+      >
 
       <el-table :data="attrList" border style="width: 100%; margin: 20px 0">
         <el-table-column type="index" label="序号" width="80" align="center">
@@ -101,6 +107,8 @@
 </template>
 
 <script>
+import { mapState } from "vuex";
+
 import Category from "@/components/Category";
 
 export default {
@@ -113,18 +121,35 @@ export default {
         attrValueList: [],
       },
       isShowList: true,
-      category:{
-        category1Id:'',
-        category2Id:'',
-        category3Id:'',
-      },
+      // category:{
+      //   category1Id:'',
+      //   category2Id:'',
+      //   category3Id:'',
+      // },
     };
   },
+  computed: {
+    ...mapState({
+      category: (state) => state.category.category,
+    }),
+  },
+  watch: {
+    //监视category3id值的变化，请求平台属性列表数据
+    "category.category3Id"(category3Id) {
+      if (!category3Id) return;
+      this.getAttrList();
+    },
+    //监视category1.2id值的变化，清空平台属性列表数据
+    "category.category1Id"() {
+      this.clearList();
+    },
+    "category.category2Id"() {
+      this.clearList();
+    },
+  },
   methods: {
-    async getAttrList(category) {
-
-      this.category = category;
-      const result = await this.$API.attrs.getAttrList(category);
+    async getAttrList() {
+      const result = await this.$API.attrs.getAttrList(this.category);
       if (result.code === 200) {
         this.attrList = result.data;
       } else {
@@ -159,34 +184,43 @@ export default {
       this.attr.attrValueList.splice(index, 1);
     },
     async save() {
-      const isAdd = !this.attr.id
-      const data = this.attr
-      if(isAdd){
-        data.categoryId = this.category.category3Id
-        data.categoryLevel = 3
+      const isAdd = !this.attr.id;
+      const data = this.attr;
+      if (isAdd) {
+        data.categoryId = this.category.category3Id;
+        data.categoryLevel = 3;
       }
       const result = await this.$API.attrs.saveAttrInfo(data);
       if (result.code === 200) {
         this.$message.success("更新属性成功~");
         this.isShowList = true;
-        this.getAttrList(this.category);
+        this.getAttrList();
       } else {
         this.$message.error(result.message);
       }
     },
-    add(){
-      this.isShowList = false
-      this.attr.attrName = ''
-      this.attr.attrValueList = []
-      this.attr.id = ''
+    add() {
+      this.isShowList = false;
+      this.attr.attrName = "";
+      this.attr.attrValueList = [];
+      this.attr.id = "";
     },
-    clearList(){
-      this.attrList = []
-      this.category.category3Id = ''
+    clearList() {
+      this.attrList = [];
+      //清空category3id，可以使添加属性按钮处于禁用状态
+      this.category.category3Id = "";
     },
   },
   components: {
     Category,
   },
+  // mounted() {
+  //   this.$bus.$on("change", this.getAttrList);
+  //   this.$bus.$on("clearList", this.clearList);
+  // },
+  // beforeDestroy() {
+  //   this.$bus.$off("change", this.getAttrList);
+  //   this.$bus.$off("clearList", this.clearList);
+  // },
 };
 </script>

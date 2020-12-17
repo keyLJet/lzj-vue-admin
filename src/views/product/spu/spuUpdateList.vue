@@ -113,7 +113,7 @@
       </el-form-item>
       <el-form-item>
         <el-button type="primary" @click="save">保存</el-button>
-        <el-button @click="$emit('showList',spu.category3Id)">取消</el-button>
+        <el-button @click="$emit('showList')">取消</el-button>
       </el-form-item>
     </el-form>
 
@@ -124,6 +124,10 @@
 </template>
 
 <script>
+import { mapState } from "vuex";
+import { category } from "@/api";
+
+
 export default {
   name: "SpuUpdateList",
   props: {
@@ -150,6 +154,9 @@ export default {
     };
   },
   computed: {
+      ...mapState({
+      category: (state) => state.category.category,
+    }),
     filterSaleAttrList() {
       return this.saleAttrList.filter((sale) => {
         return !this.spuSaleAttrList.find(
@@ -333,6 +340,7 @@ export default {
           //收集发送请求所需数据
           const spu = {
             ...this.spu,
+            category3Id:this.category.category3Id,
             spuImageList:this.imageList,
             spuSaleAttrList:this.spuSaleAttrList
           }
@@ -345,7 +353,7 @@ export default {
           }
           if(result.code === 200){
             //触发自定义事件showList，切回spuShowList页面
-            this.$emit('showList',this.spu.category3Id)
+            this.$emit('showList')
 
             this.$message.success(`${this.spu.id ? '更新' : '添加'}spu信息成功`)
           }else{
