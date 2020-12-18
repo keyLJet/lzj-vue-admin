@@ -1,10 +1,14 @@
 <template>
   <div>
-    <SkuList v-if="isShowSkuList" :spuItem='spuItem' />
+    <SkuList v-if="isShowSkuList" :spuItem="spuItem" />
 
     <div v-else>
       <Category :disabled="!isShowList" />
-      <SpuShowList v-if="isShowList" @showUpdateList="showUpdateList" @showSkuList='showSkuList' />
+      <SpuShowList
+        v-if="isShowList"
+        @showUpdateList="showUpdateList"
+        @showSkuList="showSkuList"
+      />
       <SpuUpdateList v-else :item="item" @showList="showList" />
     </div>
   </div>
@@ -23,7 +27,7 @@ export default {
       isShowList: true,
       item: {},
       isShowSkuList: false,
-      spuItem:{},
+      spuItem: {},
     };
   },
   methods: {
@@ -41,8 +45,8 @@ export default {
       });
     },
     showSkuList(row) {
-      this.isShowSkuList = true
-      this.spuItem = {...row}
+      this.isShowSkuList = true;
+      this.spuItem = { ...row };
     },
   },
   components: {
@@ -50,6 +54,9 @@ export default {
     SpuShowList,
     SpuUpdateList,
     SkuList,
+  },
+  beforeDestroy() {
+    this.$store.commit("category/RESET_CATEGORY_ID");
   },
 };
 </script>
