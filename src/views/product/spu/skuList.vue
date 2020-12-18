@@ -76,7 +76,7 @@
                 v-for="value in sale.spuSaleAttrValueList"
                 :key="value.id"
                 :label="value.saleAttrValueName"
-                :value="`${sale.id}-${value.id}`"
+                :value="value.id"
               ></el-option>
             </el-select>
           </el-form-item>
@@ -104,12 +104,12 @@
           </el-table-column>
           <el-table-column prop="imgName" label="名称"> </el-table-column>
           <el-table-column label="操作">
-            <template v-slot="{ row, $index }">
+            <template v-slot="{ row }">
               <el-button
                 v-if="!row.isDefault"
                 type="primary"
                 size="mini"
-                @click="setDefault($index)"
+                @click="setDefault(row.id)"
                 >设为默认</el-button
               >
               <el-tag v-else type="success">默认</el-tag>
@@ -119,7 +119,7 @@
       </el-form-item>
       <el-form-item>
         <el-button type="primary" @click="save">保存</el-button>
-        <el-button>取消</el-button>
+        <el-button @click="$emit('showList')">取消</el-button>
       </el-form-item>
     </el-form>
   </el-card>
@@ -218,14 +218,22 @@ export default {
         this.$message.error(result.message);
       }
     },
-    setDefault(i) {
+    setDefault(id) {
       this.clearValidate("skuImageList");
-      this.imageList = this.imageList.map((img, index) => {
+      this.imageList = this.imageList.map((img) => {
         return {
           ...img,
-          isDefault: index === i ? true : false,
+          isDefault: img.id === id ? true : false,
         };
       });
+      //同时也要修改skuImageList的数据
+      this.sku.skuImageList = this.sku.skuImageList.map((img) => {
+        return {
+          ...img,
+          isDefault: img.id === id ? true : false,
+        };
+      });
+
     },
     skuAttrValueListValidator(rule, value, callback) {
       const {
@@ -277,9 +285,46 @@ export default {
       this.$refs.skuForm.clearValidate(prop);
     },
     save() {
-      this.$refs.skuForm.validate((valid) => {
+      this.$refs.skuForm.validate(async(valid) => {
         if (valid) {
           console.log("校验通过！");
+          //收集发送请求参数所需数据
+          const {category3Id,id:spuId,tmId}=this.spu
+          const skuAttrValueList = this.sku.skuAttrValueList.map((item) =>{
+            const [attrId,valueId] = item.split('-')
+            return {
+              attrId,
+              valueId
+            }
+          })
+
+          const skuSaleAttrValueList = this.sku.skuSaleAttrValueList.map(
+            (saleAttrValueId) => {
+              return {
+                saleAttrValueId,
+                spuId,
+              };
+            }
+          )
+
+          const skuDefaultImg = this.sku.skuImageList.find((img) => img.isDefault).imgUrl
+          //发送请求添加sku信息
+          const result = await this.$API.sku.saveSku({
+            ...this.sku,
+            category3Id,
+            spuId,
+            tmId,
+            skuAttrValueList,
+            skuSaleAttrValueList,
+            skuDefaultImg
+          })
+          if (result.code === 200) {
+            this.$message.success("添加sku成功！");
+            this.$emit("showList");
+          } else {
+            this.$message.error(result.message);
+          }
+
         }
       });
     },

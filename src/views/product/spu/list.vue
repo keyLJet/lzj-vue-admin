@@ -1,6 +1,6 @@
 <template>
   <div>
-    <SkuList v-if="isShowSkuList" :spuItem="spuItem" />
+    <SkuList v-if="isShowSkuList" :spuItem="spuItem" @showList="showList" />
 
     <div v-else>
       <Category :disabled="!isShowList" />
@@ -37,12 +37,13 @@ export default {
       this.item = { ...row };
     },
     //SpuUpdateList组件中点击保存更新spu成功或者点击取消时触发，传递参数category3Id
-    showList(category3Id) {
+    showList(category) {
       this.isShowList = true;
+      this.isShowSkuList = false;
       //等SpuShowList组件页面挂载成功后触发change事件重新获取spu分页列表
-      this.$nextTick(() => {
-        this.$bus.$emit("change", { category3Id });
-      });
+      // this.$nextTick(() => {
+      //   this.$bus.$emit("change", { category3Id });
+      // });
     },
     showSkuList(row) {
       this.isShowSkuList = true;
